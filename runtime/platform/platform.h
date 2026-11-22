@@ -379,6 +379,17 @@ static inline char *plat_last_sep(const char *path) {
         if (*p == '/' || *p == '\\') last = (char *)p;
     return last;
 }
+// 1 when path does not depend on the working directory: it starts with a separator (a root or UNC path) or, on
+// Windows, with a drive letter and a separator.
+static inline int plat_path_absolute(const char *path) {
+    if (path[0] == '/' || path[0] == '\\') return 1;
+#ifdef _WIN32
+    char c = path[0];
+    return ((c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z')) && path[1] == ':' && (path[2] == '/' || path[2] == '\\');
+#else
+    return 0;
+#endif
+}
 // Environment variable as UTF-8 into out; its length, or 0 when unset, empty or too long for cap.
 size_t plat_getenv(const char *name, char *out, size_t cap);
 // The user's UI language as a BCP-47 tag ("ru-RU", "en-US"); "" when the system gives none. Valid for the process.
@@ -387,7 +398,9 @@ const char *plat_ui_language(void);
 const char *plat_user_locale(void);
 uint32_t plat_thread_id(void);                            // id of the calling thread, for unique file names
 // A system font file with the glyphs of a catalog language ("ja", "ko", "zh-Hans", "zh-Hant"): the menu shows each
-// language's name in its own script. Copies the UTF-8 path into out; 0 when the system has none.
+// language's name in its own script. Copies the UTF-8 path into out; 0 when the system has none. On Linux the file is
+// the one fontconfig picks for that language (so a sandbox that installs a font where its fontconfig finds it needs no
+// code change), with TOTK_MENU_FONT overriding it and the usual distribution paths as the fallback.
 int plat_font_path(const char *lang, char *out, size_t cap);
 // The operating system and its build ("Windows 10.0.28000") into out; 0 when unknown.
 int plat_os_version(char *out, size_t cap);
